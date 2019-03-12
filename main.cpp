@@ -1,16 +1,17 @@
-#define INT_MAX 1789654
+#define INT_MAX 1000
 #include <igl/readOFF.h>
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/vertex_triangle_adjacency.h>
 #include <string>
 #include <math.h>
 
 Eigen::MatrixXd V;
 Eigen::MatrixXi F;
 
-int minDistance(int dist[], bool sptSet[], int V_m)
+int minDistance(double dist[], bool sptSet[], int V_m)
 {
    // Initialize min value
-   int min = 0, min_index;
+   double min = INT_MAX, min_index;
 
    for (int v = 0; v < V_m; v++)
      if (sptSet[v] == false && dist[v] <= min)
@@ -19,12 +20,20 @@ int minDistance(int dist[], bool sptSet[], int V_m)
    return min_index;
 }
 
-void dijkstra(Eigen::MatrixXd graph, int src)
+double l2_norm(Eigen::MatrixXd &V, int i, int j)
+{
+  return sqrt(pow(V(i,0) - V(j,0), 2) + pow(V(i,1) - V(j,1), 2) +
+    pow(V(i,2) - V(j,2), 2));
+}
+
+double dijkstra(Eigen::MatrixXd graph, int src, int des)
 {
 
-     V_m = graph.rows();
-     int dist[V_m];     // The output array.  dist[i] will hold the shortest
+      int V_m = graph.rows();
+      std::cout << "V_m is " << V_m << std::endl;
+     double dist[V_m];     // The output array.  dist[i] will hold the shortest
                       // distance from src to i
+     std::vector<std::vector<int> > parent(V_m);
 
      bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
                      // path tree or shortest distance from src to i is finalized
@@ -39,9 +48,11 @@ void dijkstra(Eigen::MatrixXd graph, int src)
      // Find shortest path for all vertices
      for (int count = 0; count < V_m-1; count++)
      {
+       // std::cout << "count number " << count << std::endl;
        // Pick the minimum distance vertex from the set of vertices not
        // yet processed. u is always equal to src in the first iteration.
        int u = minDistance(dist, sptSet, V_m);
+       // std::cout << "min vertex is " << u << std::endl;
 
        // Mark the picked vertex as processed
        sptSet[u] = true;
@@ -54,8 +65,22 @@ void dijkstra(Eigen::MatrixXd graph, int src)
          // smaller than current value of dist[v]
          if (!sptSet[v] && graph(u,v) && dist[u] != INT_MAX
                                        && dist[u]+graph(u,v) < dist[v])
-            dist[v] = dist[u] + graph(u,v);
+                                       {
+                                         dist[v] = dist[u] + graph(u,v);
+                                         parent[u].push_back(v);
+                                       }
+
      }
+     for(size_t i=0; i<V_m; i++)
+     {
+       for(size_t j=0; j<parent[i].size(); j++)
+       {
+        std::cout << parent[i][j] << " ";
+       }
+       std::cout << std::endl;
+     }
+
+     return dist[des];
 
      // print the constructed distance array
      // printSolution(dist, V_m);
@@ -76,36 +101,66 @@ int main(int argc, char *argv[])
   int m_f = F.rows();
   int n_f = F.cols();
   Eigen::MatrixXd V_cost(m_v, m_v);
+  Eigen::MatrixXi V_adj(m_v, m_v);
+  V_cost = Eigen::MatrixXd::Zero(m_v, m_v);
+  V_adj = Eigen::MatrixXi::Zero(m_v, m_v);
+  // std::vector<std::vector<int> > VF;
+  // std::vector<std::vector<int> > VFi;
 
-  for(size_t i=0; i<m_v; i++)
+  try
   {
-    for(size_t j=0; j<m_v; j++)
+    st = std::stoi(start);
+    fin = std::stoi(finish);
+  }
+  catch(...)
+  {
+    std::cout << "Input vertices cannot be converted to int" <<
+      std::endl;
+  }
+
+
+  std::cout << "The start is " << st << " and finish is " <<
+    fin << std::endl;
+  // for(size_t i=0; i<m_v; i++)
+  // {
+  //   for(size_t j=0; j<m_v; j++)
+  //   {
+  //     double length = sqrt(pow(V(i,0) - V(j,0), 2) + pow(V(i,1) - V(j,1), 2) +
+  //       pow(V(i,2) - V(j,2), 2));
+  //       V_cost(i,j) = length;
+  //   }
+  // }
+
+  std::vector<std::vector<double>> A;
+  igl::adjacency_list(F,A);
+
+
+
+  for(size_t i=0; i<A.size(); i++)
+  {
+    for(size_t j=0; j<A[0].size(); j++)
     {
-      double length = sqrt(pow(V(i,0) - V(j,0), 2) + pow(V(i,1) - V(j,1), 2) +
-        pow(V(i,2) - V(j,2), 2));
-        V_cost(i,j) = length;
+      int k = A[i][j];
+      V_cost(i, k) = l2_norm(V, i, k);
     }
   }
 
   for(size_t i=0; i<10; i++)
   {
-    std::cout << "length is " << V_cost(i,0) << std::endl;
+    // std::cout << "The results are \n";
+    for(size_t j=0; j<10; j++)
+    {
+      std::cout << V_cost(i,j) << " ";
+    }
+    std::cout << std::endl;
   }
 
-  try
-  {
-	  st = std::stoi(start);
-	  fin = std::stoi(finish);
-  }
-  catch(...)
-  {
-	  std::cout << "Input vertices cannot be converted to int" <<
-		  std::endl;
-  }
+  double min_dist;
+  min_dist = dijkstra(V_cost, st, fin);
+  std::cout << "The minimum distance is " << min_dist << std::endl;
 
 
-  std::cout << "The start is " << st << " and finish is " <<
-	  fin << std::endl;
+
 
 
   // for(size_t i=0; i<10; i++)
