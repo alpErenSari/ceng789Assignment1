@@ -22,6 +22,8 @@ find_path(LIBIGL_INCLUDE_DIR igl/readOBJ.h
         ${CMAKE_SOURCE_DIR}/../../libigl
         /usr
         /usr/local
+	/usr/local/include
+	/usr/local/include/igl
         /usr/local/igl/libigl
     PATH_SUFFIXES include
 )
