@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
   // }
 
   std::vector<std::vector<double>> A;
-  igl::adjacency_list(F,A);
+  igl::adjacency_list(F,A, true);
 
 
     for(size_t j=0; j<A[0].size(); j++)
@@ -190,10 +190,27 @@ int main(int argc, char *argv[])
  }
  std::cout << std::endl;
 
+Eigen::MatrixXd P1(my_out.route.size()-1, 3);
+Eigen::MatrixXd P2(my_out.route.size()-1, 3);
+for(size_t i=0; i<my_out.route.size()-1; i++)
+{
+  int vertex1 = my_out.route[i];
+  int vertex2 = my_out.route[i+1];
+  P1(i,0) = V(vertex1,0) + 0.1, P1(i,1) = V(vertex1,1) + 0.1, P1(i,2) = V(vertex1,2) + 0.1;
+  P2(i,0) = V(vertex2,0) + 0.1, P2(i,1) = V(vertex2,1) + 0.1, P2(i,2) = V(vertex2,2) + 0.1;
+}
 
+Eigen::MatrixXd P(my_out.route.size(), 3);
+for(size_t i=0; i<my_out.route.size(); i++)
+{
+  int vertex = my_out.route[i];
+  P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
+}
 
   // Plot the mesh
   igl::opengl::glfw::Viewer viewer;
   viewer.data().set_mesh(V, F);
+  viewer.data().add_edges(P1, P2, Eigen::RowVector3d(1,0,0));
+  // viewer.data().add_points(P, Eigen::RowVector3d(1,0,0));
   viewer.launch();
 }
