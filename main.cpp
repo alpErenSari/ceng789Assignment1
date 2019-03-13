@@ -2,6 +2,7 @@
 #include <igl/readOFF.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/vertex_triangle_adjacency.h>
+#include <igl/adjacency_list.h>
 #include <string>
 #include <math.h>
 
@@ -26,21 +27,28 @@ double l2_norm(Eigen::MatrixXd &V, int i, int j)
     pow(V(i,2) - V(j,2), 2));
 }
 
-double dijkstra(Eigen::MatrixXd graph, int src, int des)
+struct dij_out
+{
+  double min_dist;
+  std::vector<int> route;
+};
+
+dij_out dijkstra(Eigen::MatrixXd graph, int src, int des)
 {
 
       int V_m = graph.rows();
       std::cout << "V_m is " << V_m << std::endl;
      double dist[V_m];     // The output array.  dist[i] will hold the shortest
+     int prev[V_m];
                       // distance from src to i
-     std::vector<std::vector<int> > parent(V_m);
+     std::vector<int> parent;
 
      bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
                      // path tree or shortest distance from src to i is finalized
 
      // Initialize all distances as INFINITE and stpSet[] as false
      for (int i = 0; i < V_m; i++)
-        dist[i] = INT_MAX, sptSet[i] = false;
+        dist[i] = INT_MAX, sptSet[i] = false, prev[i] = -1;
 
      // Distance of source vertex from itself is always 0
      dist[src] = 0;
@@ -67,20 +75,27 @@ double dijkstra(Eigen::MatrixXd graph, int src, int des)
                                        && dist[u]+graph(u,v) < dist[v])
                                        {
                                          dist[v] = dist[u] + graph(u,v);
-                                         parent[u].push_back(v);
+                                         prev[v] = u;
                                        }
 
      }
-     for(size_t i=0; i<V_m; i++)
+
+
+     int u = des;
+     if(prev[u]>=0 || u==src)
      {
-       for(size_t j=0; j<parent[i].size(); j++)
+       while(u>=0)
        {
-        std::cout << parent[i][j] << " ";
+         parent.push_back(u);
+         u = prev[u];
        }
-       std::cout << std::endl;
      }
 
-     return dist[des];
+     dij_out retval;
+     retval.min_dist = dist[des];
+     retval.route = parent;
+
+     return retval;
 
      // print the constructed distance array
      // printSolution(dist, V_m);
@@ -135,6 +150,13 @@ int main(int argc, char *argv[])
   igl::adjacency_list(F,A);
 
 
+    for(size_t j=0; j<A[0].size(); j++)
+    {
+      std::cout << A[st][j] << " ";
+    }
+    std::cout << std::endl;
+
+
 
   for(size_t i=0; i<A.size(); i++)
   {
@@ -156,18 +178,17 @@ int main(int argc, char *argv[])
   }
 
   double min_dist;
-  min_dist = dijkstra(V_cost, st, fin);
-  std::cout << "The minimum distance is " << min_dist << std::endl;
+  std::vector<int> route;
+  dij_out my_out;
+  my_out = dijkstra(V_cost, st, fin);
+  std::cout << "The minimum distance is " << my_out.min_dist << std::endl;
 
 
-
-
-
-  // for(size_t i=0; i<10; i++)
- //  {
-// 	  std::cout << "V is " << V(i,0) << " and F is " << F(i,0) <<
-//		 std::endl;
-//  }
+  for(size_t i=0; i<my_out.route.size(); i++)
+  {
+	  std::cout << my_out.route[i] << " ";
+ }
+ std::cout << std::endl;
 
 
 
