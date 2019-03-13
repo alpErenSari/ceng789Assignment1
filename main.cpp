@@ -207,6 +207,22 @@ for(size_t i=0; i<my_out.route.size(); i++)
   P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
 }
 
+// std::vector<int> fps(100);
+// fps[0] = 0;
+// for (size_t i = 0; i < 99; i++) {
+//   int len_try = m_v-i;
+//   std::vector<double> distances(len_try);
+//   for (size_t j = 0; j < len_try; j++) {
+//     int min = INT_MAX;
+//     for (size_t k = 0; k < i+1; k++) {
+//       int dist = dijkstra(V_cost, fps[k], )
+//     }
+//   }
+//
+// }
+
+fps.push_back
+
   // Plot the mesh
   igl::opengl::glfw::Viewer viewer;
   viewer.data().set_mesh(V, F);
