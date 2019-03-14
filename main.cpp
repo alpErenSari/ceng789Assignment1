@@ -3,6 +3,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/vertex_triangle_adjacency.h>
 #include <igl/adjacency_list.h>
+#include "fibonacci.hpp"
 #include <string>
 #include <queue>
 #include <algorithm>
@@ -198,6 +199,96 @@ dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, i
      // print the constructed distance array
      // printSolution(dist, V_m);
 }
+
+// dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
+// {
+//
+//       std::clock_t start;
+//       double duration;
+//
+//       start = std::clock(); // get current time
+//
+//       int V_m = adj_vec.size();
+//       // std::cout << "V_m is " << V_m << std::endl;
+//      double dist[V_m];     // The output array.  dist[i] will hold the shortest
+//      int prev[V_m];
+//                       // distance from src to i
+//      std::vector<int> parent;
+//      FibonacciHeap <double> pq;
+//
+//      bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
+//                      // path tree or shortest distance from src to i is finalized
+//      // Distance of source vertex from itself is always 0
+//
+//      // Initialize all distances as INFINITE and stpSet[] as false
+//      for (int i = 0; i < V_m; i++)
+//      {
+//        if(i == src)
+//        {
+//          pq.insert(0), dist[i] = 0;
+//        }
+//        else
+//        {
+//          pq.insert(INT_MAX), dist[i] = INT_MAX;
+//        }
+//        prev[i] = -1;
+//      }
+//
+//      // Find shortest path for all vertices
+//      while (!pq.isEmpty())
+//      {
+//        // std::cout << "count number " << count << std::endl;
+//        // Pick the minimum distance vertex from the set of vertices not
+//        // yet processed. u is always equal to src in the first iteration.
+//        int u = pq.getMinimum().second;
+//        pq.pop();
+//        // std::cout << "min vertex is " << u << std::endl;
+//
+//        std::vector<dij_Pair>::iterator i;
+//        // Update dist value of the adjacent vertices of the picked vertex.
+//        for (i = adj_vec[u].begin(); i != adj_vec[u].end(); i++)
+//        {
+//          // Update dist[v] only if is not in sptSet, there is an edge from
+//          // u to v, and total weight of path from src to  v through u is
+//          // smaller than current value of dist[v]
+//          int v = (*i).second;
+//          double weight = (*i).first;
+//
+//          // If there is shorted path to v through u.
+//          if (dist[v] > dist[u] + weight)
+//          {
+//              // Updating distance of v
+//              dist[v] = dist[u] + weight;
+//              pq.push(std::make_pair(dist[v], v));
+//              prev[v] = u;
+//          }
+//        }
+//      }
+//
+//
+//      int u = des;
+//      if(prev[u]>=0 || u==src)
+//      {
+//        while(u>=0)
+//        {
+//          parent.push_back(u);
+//          u = prev[u];
+//        }
+//      }
+//
+//      dij_out retval;
+//      retval.min_dist = dist[des];
+//      retval.route = parent;
+//
+//      duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+//
+//      // std::cout << "Operation took "<< duration << "seconds" << std::endl;
+//
+//      return retval;
+//
+//      // print the constructed distance array
+//      // printSolution(dist, V_m);
+// }
 
 
 int main(int argc, char *argv[])
