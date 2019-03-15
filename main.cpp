@@ -3,7 +3,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/vertex_triangle_adjacency.h>
 #include <igl/adjacency_list.h>
-#include "fibonacci.hpp"
+#include "fiboheap.h"
 #include <string>
 #include <queue>
 #include <algorithm>
@@ -12,6 +12,8 @@
 
 Eigen::MatrixXd V;
 Eigen::MatrixXi F;
+
+typedef std::pair<double, int> dij_Pair;
 
 int minDistance(double dist[], bool sptSet[], int V_m)
 {
@@ -37,14 +39,13 @@ struct dij_out
   std::vector<int> route;
 };
 
-dij_out dijkstra(Eigen::MatrixXd graph, int src, int des)
+
+
+dij_out dijkstra(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
 {
-    std::clock_t start;
-    double duration;
 
-    start = std::clock(); // get current time
 
-    int V_m = graph.rows();
+    int V_m = adj_vec.size();
     // std::cout << "V_m is " << V_m << std::endl;
     double dist[V_m];     // The output array.  dist[i] will hold the shortest
     int prev[V_m];
@@ -68,34 +69,39 @@ dij_out dijkstra(Eigen::MatrixXd graph, int src, int des)
       // Pick the minimum distance vertex from the set of vertices not
       // yet processed. u is always equal to src in the first iteration.
       int u = minDistance(dist, sptSet, V_m);
+      if(u == des)
+        break;
       // std::cout << "min vertex is " << u << std::endl;
 
       // Mark the picked vertex as processed
       sptSet[u] = true;
 
       // Update dist value of the adjacent vertices of the picked vertex.
-      for (int v = 0; v < V_m; v++)
+      std::vector<dij_Pair>::iterator i;
+      for (i = adj_vec[u].begin(); i != adj_vec[u].end(); i++){
 
       // Update dist[v] only if is not in sptSet, there is an edge from
       // u to v, and total weight of path from src to  v through u is
       // smaller than current value of dist[v]
-      if (!sptSet[v] && graph(u,v) && dist[u] != INT_MAX
-      && dist[u]+graph(u,v) < dist[v])
+      int v = (*i).second;
+      int weight = (*i).first;
+      if (!sptSet[v] && dist[u] != INT_MAX
+      && dist[u]+weight < dist[v])
       {
-        dist[v] = dist[u] + graph(u,v);
+        dist[v] = dist[u] + weight;
         prev[v] = u;
       }
-
+      }
     }
 
 
-    int u = des;
-    if(prev[u]>=0 || u==src)
+    int k = des;
+    if(prev[k]>=0 || k==src)
     {
-      while(u>=0)
+      while(k>=0)
       {
-        parent.push_back(u);
-        u = prev[u];
+        parent.push_back(k);
+        k = prev[k];
       }
     }
 
@@ -103,23 +109,12 @@ dij_out dijkstra(Eigen::MatrixXd graph, int src, int des)
     retval.min_dist = dist[des];
     retval.route = parent;
 
-    duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-
-    std::cout << "Operation took "<< duration << "seconds" << std::endl;
-
     return retval;
 }
 
-typedef std::pair<double, int> dij_Pair;
 
 dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
 {
-
-      std::clock_t start;
-      double duration;
-
-      start = std::clock(); // get current time
-
       int V_m = adj_vec.size();
       // std::cout << "V_m is " << V_m << std::endl;
      double dist[V_m];     // The output array.  dist[i] will hold the shortest
@@ -153,6 +148,8 @@ dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, i
        int u = pq.top().second;
        pq.pop();
        // std::cout << "min vertex is " << u << std::endl;
+       if(u == des)
+         break;
 
        std::vector<dij_Pair>::iterator i;
        // Update dist value of the adjacent vertices of the picked vertex.
@@ -190,105 +187,90 @@ dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, i
      retval.min_dist = dist[des];
      retval.route = parent;
 
-     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-
-     // std::cout << "Operation took "<< duration << "seconds" << std::endl;
-
      return retval;
 
      // print the constructed distance array
      // printSolution(dist, V_m);
 }
 
-// dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
-// {
-//
-//       std::clock_t start;
-//       double duration;
-//
-//       start = std::clock(); // get current time
-//
-//       int V_m = adj_vec.size();
-//       // std::cout << "V_m is " << V_m << std::endl;
-//      double dist[V_m];     // The output array.  dist[i] will hold the shortest
-//      int prev[V_m];
-//                       // distance from src to i
-//      std::vector<int> parent;
-//      FibonacciHeap <double> pq;
-//
-//      bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
-//                      // path tree or shortest distance from src to i is finalized
-//      // Distance of source vertex from itself is always 0
-//
-//      // Initialize all distances as INFINITE and stpSet[] as false
-//      for (int i = 0; i < V_m; i++)
-//      {
-//        if(i == src)
-//        {
-//          pq.insert(0), dist[i] = 0;
-//        }
-//        else
-//        {
-//          pq.insert(INT_MAX), dist[i] = INT_MAX;
-//        }
-//        prev[i] = -1;
-//      }
-//
-//      // Find shortest path for all vertices
-//      while (!pq.isEmpty())
-//      {
-//        // std::cout << "count number " << count << std::endl;
-//        // Pick the minimum distance vertex from the set of vertices not
-//        // yet processed. u is always equal to src in the first iteration.
-//        int u = pq.getMinimum().second;
-//        pq.pop();
-//        // std::cout << "min vertex is " << u << std::endl;
-//
-//        std::vector<dij_Pair>::iterator i;
-//        // Update dist value of the adjacent vertices of the picked vertex.
-//        for (i = adj_vec[u].begin(); i != adj_vec[u].end(); i++)
-//        {
-//          // Update dist[v] only if is not in sptSet, there is an edge from
-//          // u to v, and total weight of path from src to  v through u is
-//          // smaller than current value of dist[v]
-//          int v = (*i).second;
-//          double weight = (*i).first;
-//
-//          // If there is shorted path to v through u.
-//          if (dist[v] > dist[u] + weight)
-//          {
-//              // Updating distance of v
-//              dist[v] = dist[u] + weight;
-//              pq.push(std::make_pair(dist[v], v));
-//              prev[v] = u;
-//          }
-//        }
-//      }
-//
-//
-//      int u = des;
-//      if(prev[u]>=0 || u==src)
-//      {
-//        while(u>=0)
-//        {
-//          parent.push_back(u);
-//          u = prev[u];
-//        }
-//      }
-//
-//      dij_out retval;
-//      retval.min_dist = dist[des];
-//      retval.route = parent;
-//
-//      duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-//
-//      // std::cout << "Operation took "<< duration << "seconds" << std::endl;
-//
-//      return retval;
-//
-//      // print the constructed distance array
-//      // printSolution(dist, V_m);
-// }
+dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
+{
+      int V_m = adj_vec.size();
+      // std::cout << "V_m is " << V_m << std::endl;
+     double dist[V_m];     // The output array.  dist[i] will hold the shortest
+     int prev[V_m];
+                      // distance from src to i
+     std::vector<int> parent;
+     FibHeap <dij_Pair> pq;
+
+     bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
+                     // path tree or shortest distance from src to i is finalized
+     // Distance of source vertex from itself is always 0
+
+     // Initialize all distances as INFINITE and stpSet[] as false
+     for (int i = 0; i < V_m; i++)
+     {
+       if(i == src)
+       {
+         pq.push(std::make_pair(0, i));
+       }
+       else
+       {
+         pq.push(std::make_pair(INT_MAX, i)), dist[i] = INT_MAX;
+       }
+       prev[i] = -1;
+     }
+
+     // Find shortest path for all vertices
+     while (!pq.empty())
+     {
+       // std::cout << "count number " << count << std::endl;
+       // Pick the minimum distance vertex from the set of vertices not
+       // yet processed. u is always equal to src in the first iteration.
+       int u = pq.top().second;
+       pq.pop();
+       // std::cout << "min vertex is " << u << std::endl;
+       if(u == des)
+         break;
+
+       std::vector<dij_Pair>::iterator i;
+       // Update dist value of the adjacent vertices of the picked vertex.
+       for (i = adj_vec[u].begin(); i != adj_vec[u].end(); i++)
+       {
+         // Update dist[v] only if is not in sptSet, there is an edge from
+         // u to v, and total weight of path from src to  v through u is
+         // smaller than current value of dist[v]
+         int v = (*i).second;
+         double weight = (*i).first;
+
+         // If there is shorted path to v through u.
+         if (dist[v] > dist[u] + weight)
+         {
+             // Updating distance of v
+             dist[v] = dist[u] + weight;
+             pq.push(std::make_pair(dist[v], v));
+             prev[v] = u;
+         }
+       }
+     }
+
+
+     int u = des;
+     if(prev[u]>=0 || u==src)
+     {
+       while(u>=0)
+       {
+         parent.push_back(u);
+         u = prev[u];
+       }
+     }
+
+     dij_out retval;
+     retval.min_dist = dist[des];
+     retval.route = parent;
+
+     return retval;
+}
 
 
 int main(int argc, char *argv[])
@@ -306,9 +288,9 @@ int main(int argc, char *argv[])
   int m_f = F.rows();
   int n_f = F.cols();
   Eigen::MatrixXd V_cost(m_v, m_v);
-  Eigen::MatrixXi V_adj(m_v, m_v);
-  V_cost = Eigen::MatrixXd::Zero(m_v, m_v);
-  V_adj = Eigen::MatrixXi::Zero(m_v, m_v);
+  // Eigen::MatrixXi V_adj(m_v, m_v);
+  // V_cost = Eigen::MatrixXd::Zero(m_v, m_v);
+  // V_adj = Eigen::MatrixXi::Zero(m_v, m_v);
   // std::vector<std::vector<int> > VF;
   // std::vector<std::vector<int> > VFi;
 
@@ -352,7 +334,7 @@ int main(int argc, char *argv[])
     {
       int k = A[i][j];
       double weight = l2_norm(V, i, k);
-      V_cost(i, k) = weight;
+      // V_cost(i, k) = weight;
       my_pair[i].push_back(std::make_pair(weight, k));
     }
   }
@@ -370,8 +352,17 @@ int main(int argc, char *argv[])
   double min_dist;
   std::vector<int> route;
   dij_out my_out;
-  // my_out = dijkstra(V_cost, st, fin);
+
+  std::clock_t start_time;
+  double duration;
+
+  my_out = dijkstra(my_pair, st, fin);
+
+  duration = ( std::clock() - start_time ) / (double) CLOCKS_PER_SEC;
+  std::cout << "Operation took "<< duration << "seconds for array dij" << std::endl;
+
   my_out = dijkstra_min_heap(my_pair, st, fin);
+  my_out = dijkstra_fibo_heap(my_pair, st, fin);
   std::cout << "The minimum distance is " << my_out.min_dist << std::endl;
 
 
