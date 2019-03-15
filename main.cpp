@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <math.h>
 #include <ctime>
+#include <fstream>
 
 Eigen::MatrixXd V;
 Eigen::MatrixXi F;
@@ -213,6 +214,7 @@ dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, 
        if(i == src)
        {
          pq.push(std::make_pair(0, i));
+         dist[i] = 0;
        }
        else
        {
@@ -287,7 +289,8 @@ int main(int argc, char *argv[])
   int n_v = V.cols();
   int m_f = F.rows();
   int n_f = F.cols();
-  Eigen::MatrixXd V_cost(m_v, m_v);
+  Eigen::MatrixXd V_geodesic(m_v, m_v);
+  // Eigen::MatrixXd V_cost(m_v, m_v);
   // Eigen::MatrixXi V_adj(m_v, m_v);
   // V_cost = Eigen::MatrixXd::Zero(m_v, m_v);
   // V_adj = Eigen::MatrixXi::Zero(m_v, m_v);
@@ -339,31 +342,55 @@ int main(int argc, char *argv[])
     }
   }
 
-  for(size_t i=0; i<10; i++)
-  {
-    // std::cout << "The results are \n";
-    for(size_t j=0; j<10; j++)
-    {
-      std::cout << V_cost(i,j) << " ";
-    }
-    std::cout << std::endl;
-  }
+  // for(size_t i=0; i<10; i++)
+  // {
+  //   // std::cout << "The results are \n";
+  //   for(size_t j=0; j<10; j++)
+  //   {
+  //     std::cout << V_cost(i,j) << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 
   double min_dist;
   std::vector<int> route;
+
+  std::clock_t start_time = std::clock();
+  double duration;
   dij_out my_out;
 
-  std::clock_t start_time;
-  double duration;
-
-  my_out = dijkstra(my_pair, st, fin);
+  int bar_number = m_v/100;
+  double max_geodesic = 0;
+  for (size_t i = 0; i < m_v; i++) {
+    for (size_t j = 0; j < m_v; j++) {
+      dij_out my_out_temp = dijkstra_fibo_heap(my_pair, i, j);
+      V_geodesic(i,j) = my_out_temp.min_dist;
+      if(my_out_temp.min_dist > max_geodesic)
+        max_geodesic = my_out_temp.min_dist;
+      if(i == st && j == fin)
+        my_out = my_out_temp;
+    }
+    // if(i%bar_number==0)
+    //   std::cout << "Geodesic distance matrix progress: " << i/bar_number << "% \n";
+  }
 
   duration = ( std::clock() - start_time ) / (double) CLOCKS_PER_SEC;
   std::cout << "Operation took "<< duration << "seconds for array dij" << std::endl;
-
-  my_out = dijkstra_min_heap(my_pair, st, fin);
-  my_out = dijkstra_fibo_heap(my_pair, st, fin);
+  // my_out = dijkstra(my_pair, st, fin);
+  // my_out = dijkstra_min_heap(my_pair, st, fin);
+  // my_out = dijkstra_fibo_heap(my_pair, st, fin);
   std::cout << "The minimum distance is " << my_out.min_dist << std::endl;
+  std::cout << "The maximum distance is " << max_geodesic << std::endl;
+
+  std::ofstream myfile;
+  myfile.open ("first_geodesic.txt");
+  for (size_t i = 0; i < m_v; i++) {
+    for (size_t j = 0; j < m_v; j++) {
+      myfile << V_geodesic(i,j) << " ";
+    }
+    myfile << "\n";
+  }
+  myfile.close();
 
 
   for(size_t i=0; i<my_out.route.size(); i++)
@@ -404,7 +431,7 @@ for (size_t i = 1; i < N_samples; i++) {
     double min_inner = INT_MAX;
     for (size_t k = 0; k < i+1; k++) {
       // dij_out my_dij = dijkstra(V_cost, fps[k], j);
-      dij_out my_dij = dijkstra_min_heap(my_pair, fps[k], j);
+      dij_out my_dij = dijkstra_fibo_heap(my_pair, fps[k], j);
       if(my_dij.min_dist < min_inner)
         min_inner = my_dij.min_dist;
     }
@@ -427,6 +454,26 @@ for(size_t i=0; i<N_samples; i++)
   int vertex = fps[i];
   P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
 }
+
+  // start the geodesic iso-curve signature
+  int k_iso = 20;
+  // Initialize the bilateral_hist with zeros
+  std::vector<int> bilateral_hist(k_iso, 0);
+  double k_unit = max_geodesic/k_iso;
+  std::vector<int> iso_k_classes(m_v, 0);
+  for (size_t i = 0; i < m_v; i++) {
+    int k_class = round(V_geodesic(0,i)/k_unit);
+    iso_k_classes[i] = k_class;
+    bilateral_hist[k_class]++;
+  }
+
+  std::cout << "ISO-K classes" << '\n';
+  for (size_t i = 0; i < 20; i++) {
+    std::cout << bilateral_hist[i] << " ";
+  }
+  std::cout << '\n';
+
+
 
   // Plot the mesh
   igl::opengl::glfw::Viewer viewer;
