@@ -13,6 +13,7 @@
 
 Eigen::MatrixXd V;
 Eigen::MatrixXi F;
+Eigen::MatrixXd C;
 
 typedef std::pair<double, int> dij_Pair;
 
@@ -412,73 +413,154 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
 }
 
 // this the FPS part
-int N_samples = 20;
-bool isVertexUsed[m_v];
-for (size_t i = 0; i < m_v; i++) {
-  isVertexUsed[i] = false;
-}
-isVertexUsed[0] = true;
-std::vector<int> fps(N_samples);
-fps[0] = 0;
-for (size_t i = 1; i < N_samples; i++) {
-  // int len_try = m_v-i;
-  double max = 0;
-  int max_place = 0;
-  // std::vector<double> distances(len_try);
-  for (size_t j = 0; j < m_v; j++) {
-    if(isVertexUsed[j])
-      continue;
-    double min_inner = INT_MAX;
-    for (size_t k = 0; k < i+1; k++) {
-      // dij_out my_dij = dijkstra(V_cost, fps[k], j);
-      dij_out my_dij = dijkstra_fibo_heap(my_pair, fps[k], j);
-      if(my_dij.min_dist < min_inner)
-        min_inner = my_dij.min_dist;
-    }
-    if(max < min_inner)
-    {
-      max = min_inner;
-      max_place = j;
-    }
-
-  }
-  fps[i] = max_place;
-  isVertexUsed[max_place] = true;
-  std::cout << "The iteration number is " << i << '\n';
-  std::cout << "The selected vertex is " << max_place << '\n';
-}
-
-Eigen::MatrixXd P(N_samples, 3);
-for(size_t i=0; i<N_samples; i++)
-{
-  int vertex = fps[i];
-  P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
-}
+// int N_samples = 20;
+// bool isVertexUsed[m_v];
+// for (size_t i = 0; i < m_v; i++) {
+//   isVertexUsed[i] = false;
+// }
+// isVertexUsed[0] = true;
+// std::vector<int> fps(N_samples);
+// fps[0] = 0;
+// for (size_t i = 1; i < N_samples; i++) {
+//   // int len_try = m_v-i;
+//   double max = 0;
+//   int max_place = 0;
+//   // std::vector<double> distances(len_try);
+//   for (size_t j = 0; j < m_v; j++) {
+//     if(isVertexUsed[j])
+//       continue;
+//     double min_inner = INT_MAX;
+//     for (size_t k = 0; k < i+1; k++) {
+//       // dij_out my_dij = dijkstra(V_cost, fps[k], j);
+//       dij_out my_dij = dijkstra_fibo_heap(my_pair, fps[k], j);
+//       if(my_dij.min_dist < min_inner)
+//         min_inner = my_dij.min_dist;
+//     }
+//     if(max < min_inner)
+//     {
+//       max = min_inner;
+//       max_place = j;
+//     }
+//
+//   }
+//   fps[i] = max_place;
+//   isVertexUsed[max_place] = true;
+//   std::cout << "The iteration number is " << i << '\n';
+//   std::cout << "The selected vertex is " << max_place << '\n';
+// }
+// // put the fps points into to P for displaying them
+// Eigen::MatrixXd P(N_samples, 3);
+// for(size_t i=0; i<N_samples; i++)
+// {
+//   int vertex = fps[i];
+//   P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
+// }
 
   // start the geodesic iso-curve signature
   int k_iso = 20;
+  double k_unit = max_geodesic/k_iso;
+  std::vector<double> iso_curve_bin(k_iso, 0);
+  for (size_t i = 0; i < m_f; i++) {
+    int a = F(i,0), b = F(i,1), c = F(i,2);
+    double k_a = V_geodesic(st, a);
+    double k_b = V_geodesic(st, b);
+    double k_c = V_geodesic(st, c);
+    int radii_number = round((k_a + k_b + k_c)/(3*k_unit));
+    double r_i = k_unit*radii_number;
+    if((k_a < r_i && k_b > r_i && k_c > r_i) || (k_a > r_i && k_b < r_i && k_c < r_i))
+    {
+      double a1, a2;
+      Eigen::VectorXd p1, p2;
+      a1 = abs(r_i - k_a)/abs(k_b - k_a);
+      a2 = abs(r_i - k_a)/abs(k_c - k_a);
+      p1 = (1 - a1)*V.row(a) + a1*V.row(b);
+      p2 = (1 - a2)*V.row(a) + a2*V.row(c);
+      iso_curve_bin[radii_number] += (p1 - p2).norm();
+      std::cout << "The norm is " << p2(1) << " " << p2(2) << '\n';
+    }
+    else if((k_b < r_i && k_a > r_i && k_c > r_i) || (k_b > r_i && k_a < r_i && k_c < r_i))
+    {
+      double a1, a2;
+      Eigen::VectorXd p1, p2;
+      a1 = abs(r_i - k_b)/abs(k_a - k_b);
+      a2 = abs(r_i - k_b)/abs(k_c - k_b);
+      p1 = (1 - a1)*V.row(b) + a1*V.row(a);
+      p2 = (1 - a2)*V.row(b) + a2*V.row(c);
+      iso_curve_bin[radii_number] += (p1 - p2).norm();
+    }
+    else if((k_c < r_i && k_a > r_i && k_b > r_i) || (k_c > r_i && k_a < r_i && k_b < r_i))
+    {
+      double a1, a2;
+      Eigen::VectorXd p1, p2;
+      a1 = abs(r_i - k_c)/abs(k_a - k_c);
+      a2 = abs(r_i - k_c)/abs(k_b - k_c);
+      p1 = (1 - a1)*V.row(c) + a1*V.row(a);
+      p2 = (1 - a2)*V.row(c) + a2*V.row(b);
+      iso_curve_bin[radii_number] += (p1 - p2).norm();
+    }
+
+  }
+
+  std::cout << "ISO-Curve Signature: " << '\n';
+  for (size_t i = 0; i < iso_curve_bin.size(); i++) {
+    std::cout << iso_curve_bin[i] << " ";
+  }
+  std::cout << '\n';
+
   // Initialize the bilateral_hist with zeros
   std::vector<int> bilateral_hist(k_iso, 0);
-  double k_unit = max_geodesic/k_iso;
-  std::vector<int> iso_k_classes(m_v, 0);
+
+  std::vector<std::vector<int> > iso_k_classes(k_iso);
+  std::vector<int> roi_elementes;
+  std::vector<bool> is_roi_element(m_v, false);
+  double distance_threshold = max_geodesic/5;
   for (size_t i = 0; i < m_v; i++) {
-    int k_class = round(V_geodesic(0,i)/k_unit);
-    iso_k_classes[i] = k_class;
-    bilateral_hist[k_class]++;
+    double min_geo_to_path = INT_MAX;
+    for (size_t j = 0; j < my_out.route.size(); j++) {
+      if(V_geodesic(i,j) < min_geo_to_path && i!=j)
+        min_geo_to_path = V_geodesic(i,j);
+    }
+    if(min_geo_to_path < distance_threshold &&
+      V_geodesic(i,st) < distance_threshold && V_geodesic(i,fin) < distance_threshold)
+    {
+      roi_elementes.push_back(i);
+      is_roi_element[i] = true;
+      int k_class = round(min_geo_to_path/k_unit);
+      iso_k_classes[k_class].push_back(i);
+      bilateral_hist[k_class]++;
+    }
   }
+  // iterate over the faces and compute bilateral histogram
+  Eigen::VectorXd Z = Eigen::VectorXd::Zero(m_f);
+  for (size_t i = 0; i < m_f; i++) {
+    int a = F(i,0), b = F(i,1), c = F(i,2);
+    if (is_roi_element[a] && is_roi_element[b] && is_roi_element[c]) {
+      int k_class = round(distance_threshold/V_geodesic(st, a));
+      Z(i) = distance_threshold/V_geodesic(st, a);
+    }
+  }
+
+  igl::jet(Z,true,C);
 
   std::cout << "ISO-K classes" << '\n';
   for (size_t i = 0; i < 20; i++) {
     std::cout << bilateral_hist[i] << " ";
   }
   std::cout << '\n';
-
+  // put the roi point into matrix P for visualization
+  Eigen::MatrixXd P(roi_elementes.size(), 3);
+  for(size_t i=0; i<roi_elementes.size(); i++)
+  {
+    int vertex = roi_elementes[i];
+    P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
+  }
 
 
   // Plot the mesh
   igl::opengl::glfw::Viewer viewer;
   viewer.data().set_mesh(V, F);
   viewer.data().add_edges(P1, P2, Eigen::RowVector3d(1,0,0));
-  viewer.data().add_points(P, Eigen::RowVector3d(0,0,1));
+  // viewer.data().add_points(P, Eigen::RowVector3d(0,0,1));
+  viewer.data().set_colors(C);
   viewer.launch();
 }
