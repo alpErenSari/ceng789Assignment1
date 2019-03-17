@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
     for (size_t j = 0; j < m_v; j++) {
       dij_out my_out_temp = dijkstra_fibo_heap(my_pair, i, j);
       V_geodesic(i,j) = my_out_temp.min_dist;
-      if(my_out_temp.min_dist > max_geodesic)
+      if(my_out_temp.min_dist > max_geodesic && i == st)
         max_geodesic = my_out_temp.min_dist;
       if(i == st && j == fin)
         my_out = my_out_temp;
@@ -467,6 +467,7 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
     double k_c = V_geodesic(st, c);
     int radii_number = round((k_a + k_b + k_c)/(3*k_unit));
     double r_i = k_unit*radii_number;
+    // std::cout << "The iso-curve bin number is " << radii_number << '\n';
     if((k_a < r_i && k_b > r_i && k_c > r_i) || (k_a > r_i && k_b < r_i && k_c < r_i))
     {
       double a1, a2;
@@ -476,7 +477,6 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
       p1 = (1 - a1)*V.row(a) + a1*V.row(b);
       p2 = (1 - a2)*V.row(a) + a2*V.row(c);
       iso_curve_bin[radii_number] += (p1 - p2).norm();
-      std::cout << "The norm is " << p2(1) << " " << p2(2) << '\n';
     }
     else if((k_b < r_i && k_a > r_i && k_c > r_i) || (k_b > r_i && k_a < r_i && k_c < r_i))
     {
@@ -513,19 +513,23 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
   std::vector<std::vector<int> > iso_k_classes(k_iso);
   std::vector<int> roi_elementes;
   std::vector<bool> is_roi_element(m_v, false);
-  double distance_threshold = max_geodesic/5;
+  double distance_threshold = max_geodesic/2;
+  double bilateral_unit = distance_threshold/20;
   for (size_t i = 0; i < m_v; i++) {
     double min_geo_to_path = INT_MAX;
     for (size_t j = 0; j < my_out.route.size(); j++) {
-      if(V_geodesic(i,j) < min_geo_to_path && i!=j)
-        min_geo_to_path = V_geodesic(i,j);
+      int k = my_out.route[j];
+      if(V_geodesic(i,k) < min_geo_to_path && i!=k)
+      {
+        min_geo_to_path = V_geodesic(i,k);
+      }
     }
     if(min_geo_to_path < distance_threshold &&
       V_geodesic(i,st) < distance_threshold && V_geodesic(i,fin) < distance_threshold)
     {
       roi_elementes.push_back(i);
       is_roi_element[i] = true;
-      int k_class = round(min_geo_to_path/k_unit);
+      int k_class = round(min_geo_to_path/bilateral_unit);
       iso_k_classes[k_class].push_back(i);
       bilateral_hist[k_class]++;
     }
@@ -536,7 +540,10 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
     int a = F(i,0), b = F(i,1), c = F(i,2);
     if (is_roi_element[a] && is_roi_element[b] && is_roi_element[c]) {
       int k_class = round(distance_threshold/V_geodesic(st, a));
-      Z(i) = distance_threshold/V_geodesic(st, a);
+      double middle_bi = (V_geodesic(st, a) + V_geodesic(st, b)
+        + V_geodesic(st, c))/3;
+      Z(i) = 1 - middle_bi/distance_threshold;
+      // std::cout << "Z value is " << Z(i) << '\n';
     }
   }
 
