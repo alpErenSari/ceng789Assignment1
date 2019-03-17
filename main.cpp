@@ -460,6 +460,7 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
   int k_iso = 20;
   double k_unit = max_geodesic/k_iso;
   std::vector<double> iso_curve_bin(k_iso, 0);
+  std::vector<Eigen::VectorXd> iso_points_1, iso_points_2;
   for (size_t i = 0; i < m_f; i++) {
     int a = F(i,0), b = F(i,1), c = F(i,2);
     double k_a = V_geodesic(st, a);
@@ -477,6 +478,7 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
       p1 = (1 - a1)*V.row(a) + a1*V.row(b);
       p2 = (1 - a2)*V.row(a) + a2*V.row(c);
       iso_curve_bin[radii_number] += (p1 - p2).norm();
+      iso_points_1.push_back(p1), iso_points_2.push_back(p2);
     }
     else if((k_b < r_i && k_a > r_i && k_c > r_i) || (k_b > r_i && k_a < r_i && k_c < r_i))
     {
@@ -487,6 +489,7 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
       p1 = (1 - a1)*V.row(b) + a1*V.row(a);
       p2 = (1 - a2)*V.row(b) + a2*V.row(c);
       iso_curve_bin[radii_number] += (p1 - p2).norm();
+      iso_points_1.push_back(p1), iso_points_2.push_back(p2);
     }
     else if((k_c < r_i && k_a > r_i && k_b > r_i) || (k_c > r_i && k_a < r_i && k_b < r_i))
     {
@@ -497,8 +500,8 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
       p1 = (1 - a1)*V.row(c) + a1*V.row(a);
       p2 = (1 - a2)*V.row(c) + a2*V.row(b);
       iso_curve_bin[radii_number] += (p1 - p2).norm();
+      iso_points_1.push_back(p1), iso_points_2.push_back(p2);
     }
-
   }
 
   std::cout << "ISO-Curve Signature: " << '\n';
