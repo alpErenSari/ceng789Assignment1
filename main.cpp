@@ -17,7 +17,7 @@ Eigen::MatrixXd C;
 
 typedef std::pair<double, int> dij_Pair;
 
-int minDistance(double dist[], bool sptSet[], int V_m)
+int minDistance(std::vector<double> &dist, std::vector<bool> &sptSet, int V_m)
 {
    // Initialize min value
    double min = INT_MAX, min_index;
@@ -29,6 +29,12 @@ int minDistance(double dist[], bool sptSet[], int V_m)
    return min_index;
 }
 
+double triangle_area_calculater(double a, double b, double c)
+{
+  double p = (a + b + c)/2;
+  return sqrt(p*(p-a)*(p-b)*(p-c));
+}
+
 double l2_norm(Eigen::MatrixXd &V, int i, int j)
 {
   return sqrt(pow(V(i,0) - V(j,0), 2) + pow(V(i,1) - V(j,1), 2) +
@@ -38,7 +44,8 @@ double l2_norm(Eigen::MatrixXd &V, int i, int j)
 struct dij_out
 {
   double min_dist;
-  std::vector<int> route;
+  std::vector<int> prev;
+  std::vector<double> dist;
 };
 
 
@@ -49,12 +56,12 @@ dij_out dijkstra(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
 
     int V_m = adj_vec.size();
     // std::cout << "V_m is " << V_m << std::endl;
-    double dist[V_m];     // The output array.  dist[i] will hold the shortest
-    int prev[V_m];
+    std::vector<double> dist(V_m);     // The output array.  dist[i] will hold the shortest
+    std::vector<int> prev(V_m);
+    std::vector<bool> sptSet(V_m); // sptSet[i] will be true if vertex i is included in shortest
     // distance from src to i
-    std::vector<int> parent;
+    // std::vector<int> parent;
 
-    bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
     // path tree or shortest distance from src to i is finalized
 
     // Initialize all distances as INFINITE and stpSet[] as false
@@ -71,8 +78,8 @@ dij_out dijkstra(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
       // Pick the minimum distance vertex from the set of vertices not
       // yet processed. u is always equal to src in the first iteration.
       int u = minDistance(dist, sptSet, V_m);
-      if(u == des)
-        break;
+      // if(u == des)
+      //   break;
       // std::cout << "min vertex is " << u << std::endl;
 
       // Mark the picked vertex as processed
@@ -97,19 +104,20 @@ dij_out dijkstra(std::vector<std::vector<dij_Pair>> adj_vec, int src, int des)
     }
 
 
-    int k = des;
-    if(prev[k]>=0 || k==src)
-    {
-      while(k>=0)
-      {
-        parent.push_back(k);
-        k = prev[k];
-      }
-    }
+    // int k = des;
+    // if(prev[k]>=0 || k==src)
+    // {
+    //   while(k>=0)
+    //   {
+    //     parent.push_back(k);
+    //     k = prev[k];
+    //   }
+    // }
 
     dij_out retval;
     retval.min_dist = dist[des];
-    retval.route = parent;
+    retval.prev = prev;
+    retval.dist = dist;
 
     return retval;
 }
@@ -119,13 +127,13 @@ dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, i
 {
       int V_m = adj_vec.size();
       // std::cout << "V_m is " << V_m << std::endl;
-     double dist[V_m];     // The output array.  dist[i] will hold the shortest
-     int prev[V_m];
+      std::vector<double> dist(V_m);     // The output array.  dist[i] will hold the shortest
+      std::vector<int> prev(V_m);
+      std::vector<bool> sptSet(V_m); // sptSet[i] will be true if vertex i is included in shortest
                       // distance from src to i
-     std::vector<int> parent;
+     // std::vector<int> parent;
      std::priority_queue <dij_Pair, std::vector<dij_Pair>, std::greater<dij_Pair> > pq;
 
-     bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
                      // path tree or shortest distance from src to i is finalized
      // Distance of source vertex from itself is always 0
      dist[src] = 0;
@@ -150,8 +158,8 @@ dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, i
        int u = pq.top().second;
        pq.pop();
        // std::cout << "min vertex is " << u << std::endl;
-       if(u == des)
-         break;
+       // if(u == des)
+       //   break;
 
        std::vector<dij_Pair>::iterator i;
        // Update dist value of the adjacent vertices of the picked vertex.
@@ -175,19 +183,20 @@ dij_out dijkstra_min_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, i
      }
 
 
-     int u = des;
-     if(prev[u]>=0 || u==src)
-     {
-       while(u>=0)
-       {
-         parent.push_back(u);
-         u = prev[u];
-       }
-     }
+     // int u = des;
+     // if(prev[u]>=0 || u==src)
+     // {
+     //   while(u>=0)
+     //   {
+     //     parent.push_back(u);
+     //     u = prev[u];
+     //   }
+     // }
 
      dij_out retval;
      retval.min_dist = dist[des];
-     retval.route = parent;
+     retval.prev = prev;
+     retval.dist = dist;
 
      return retval;
 
@@ -199,13 +208,14 @@ dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, 
 {
       int V_m = adj_vec.size();
       // std::cout << "V_m is " << V_m << std::endl;
-     double dist[V_m];     // The output array.  dist[i] will hold the shortest
-     int prev[V_m];
+     std::vector<double> dist(V_m);     // The output array.  dist[i] will hold the shortest
+     std::vector<int> prev(V_m);
+     std::vector<bool> sptSet(V_m); // sptSet[i] will be true if vertex i is included in shortest
+
                       // distance from src to i
-     std::vector<int> parent;
+     // std::vector<int> parent;
      FibHeap <dij_Pair> pq;
 
-     bool sptSet[V_m]; // sptSet[i] will be true if vertex i is included in shortest
                      // path tree or shortest distance from src to i is finalized
      // Distance of source vertex from itself is always 0
 
@@ -233,8 +243,8 @@ dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, 
        int u = pq.top().second;
        pq.pop();
        // std::cout << "min vertex is " << u << std::endl;
-       if(u == des)
-         break;
+       // if(u == des)
+       //   break;
 
        std::vector<dij_Pair>::iterator i;
        // Update dist value of the adjacent vertices of the picked vertex.
@@ -258,19 +268,20 @@ dij_out dijkstra_fibo_heap(std::vector<std::vector<dij_Pair>> adj_vec, int src, 
      }
 
 
-     int u = des;
-     if(prev[u]>=0 || u==src)
-     {
-       while(u>=0)
-       {
-         parent.push_back(u);
-         u = prev[u];
-       }
-     }
+     // int u = des;
+     // if(prev[u]>=0 || u==src)
+     // {
+     //   while(u>=0)
+     //   {
+     //     parent.push_back(u);
+     //     u = prev[u];
+     //   }
+     // }
 
      dij_out retval;
      retval.min_dist = dist[des];
-     retval.route = parent;
+     retval.prev = prev;
+     retval.dist = dist;
 
      return retval;
 }
@@ -290,7 +301,7 @@ int main(int argc, char *argv[])
   int n_v = V.cols();
   int m_f = F.rows();
   int n_f = F.cols();
-  Eigen::MatrixXd V_geodesic(m_v, m_v);
+  Eigen::MatrixXf V_geodesic(m_v, m_v);
   // Eigen::MatrixXd V_cost(m_v, m_v);
   // Eigen::MatrixXi V_adj(m_v, m_v);
   // V_cost = Eigen::MatrixXd::Zero(m_v, m_v);
@@ -306,12 +317,25 @@ int main(int argc, char *argv[])
   catch(...)
   {
     std::cout << "Input vertices cannot be converted to int" <<
-      std::endl;
+    std::endl;
+  }
+
+  if(st >= m_v)
+  {
+    std::cerr << "Source vertex index cannot be larger than the vertex number: " << m_v-1 << '\n';
+    std::exit(1);
+  }
+  else if(fin > m_v )
+  {
+    std::cerr << "Destination vertex index cannot be larger than the vertex number: " << m_v-1 << '\n';
+    std::exit(1);
   }
 
 
   std::cout << "The start is " << st << " and finish is " <<
     fin << std::endl;
+  std::cout << "The V size is" << m_v << '\n';
+  std::cout << "The F size is" << m_f << '\n';
   // for(size_t i=0; i<m_v; i++)
   // {
   //   for(size_t j=0; j<m_v; j++)
@@ -325,6 +349,7 @@ int main(int argc, char *argv[])
   std::vector<std::vector<double>> A;
   igl::adjacency_list(F,A, true);
   std::vector<std::vector<dij_Pair>> my_pair(A.size());
+  std::cout << "Adjacency list computed" << '\n';
 
     // for(size_t j=0; j<A[0].size(); j++)
     // {
@@ -343,6 +368,8 @@ int main(int argc, char *argv[])
     }
   }
 
+  std::cout << "my_pair computed" << '\n';
+
   // for(size_t i=0; i<10; i++)
   // {
   //   // std::cout << "The results are \n";
@@ -354,7 +381,6 @@ int main(int argc, char *argv[])
   // }
 
   double min_dist;
-  std::vector<int> route;
 
   std::clock_t start_time = std::clock();
   double duration;
@@ -363,13 +389,15 @@ int main(int argc, char *argv[])
   int bar_number = m_v/100;
   double max_geodesic = 0;
   for (size_t i = 0; i < m_v; i++) {
+    std::cout << "Dijkstra step " << i << '\n';
+    dij_out my_out_temp = dijkstra_fibo_heap(my_pair, i, fin);
+    if(i == st)
+      my_out = my_out_temp;
     for (size_t j = 0; j < m_v; j++) {
-      dij_out my_out_temp = dijkstra_fibo_heap(my_pair, i, j);
-      V_geodesic(i,j) = my_out_temp.min_dist;
-      if(my_out_temp.min_dist > max_geodesic && i == st)
-        max_geodesic = my_out_temp.min_dist;
-      if(i == st && j == fin)
-        my_out = my_out_temp;
+      // std::cout << "Dijkstra second step " << j << '\n';
+      V_geodesic(i,j) = my_out_temp.dist[j];
+      if(my_out_temp.dist[j] > max_geodesic && i == st)
+        max_geodesic = my_out_temp.dist[j];
     }
     // if(i%bar_number==0)
     //   std::cout << "Geodesic distance matrix progress: " << i/bar_number << "% \n";
@@ -383,30 +411,42 @@ int main(int argc, char *argv[])
   std::cout << "The minimum distance is " << my_out.min_dist << std::endl;
   std::cout << "The maximum distance is " << max_geodesic << std::endl;
 
-  std::ofstream myfile;
-  myfile.open ("first_geodesic.txt");
-  for (size_t i = 0; i < m_v; i++) {
-    for (size_t j = 0; j < m_v; j++) {
-      myfile << V_geodesic(i,j) << " ";
-    }
-    myfile << "\n";
-  }
-  myfile.close();
+  // std::ofstream myfile;
+  // myfile.open ("first_geodesic.txt");
+  // for (size_t i = 0; i < m_v; i++) {
+  //   for (size_t j = 0; j < m_v; j++) {
+  //     myfile << V_geodesic(i,j) << " ";
+  //   }
+  //   myfile << "\n";
+  // }
+  // myfile.close();
 
-
-  for(size_t i=0; i<my_out.route.size(); i++)
+  int u = fin;
+  std::vector<int> parent_m;
+  if(my_out.prev[u]>=0 || u==st)
   {
-	  std::cout << my_out.route[i] << " ";
+    while(u>=0)
+    {
+      parent_m.push_back(u);
+      u = my_out.prev[u];
+    }
+  }
+
+
+
+  for(size_t i=0; i<parent_m.size(); i++)
+  {
+	  std::cout << parent_m[i] << " ";
  }
  std::cout << std::endl;
 
 // put the coordinates of the vertices in matrices to draw the line
-Eigen::MatrixXd P1(my_out.route.size()-1, 3);
-Eigen::MatrixXd P2(my_out.route.size()-1, 3);
-for(size_t i=0; i<my_out.route.size()-1; i++)
+Eigen::MatrixXd P1(parent_m.size()-1, 3);
+Eigen::MatrixXd P2(parent_m.size()-1, 3);
+for(size_t i=0; i<parent_m.size()-1; i++)
 {
-  int vertex1 = my_out.route[i];
-  int vertex2 = my_out.route[i+1];
+  int vertex1 = parent_m[i];
+  int vertex2 = parent_m[i+1];
   // adding 0.1 to coordinates to make the line visible
   P1(i,0) = V(vertex1,0) + 0.1, P1(i,1) = V(vertex1,1) + 0.1, P1(i,2) = V(vertex1,2) + 0.1;
   P2(i,0) = V(vertex2,0) + 0.1, P2(i,1) = V(vertex2,1) + 0.1, P2(i,2) = V(vertex2,2) + 0.1;
@@ -456,7 +496,7 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
 //   P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
 // }
 
-  // start the geodesic iso-curve signature
+// start the geodesic iso-curve signature
   int k_iso = 20;
   double k_unit = max_geodesic/k_iso;
   std::vector<double> iso_curve_bin(k_iso, 0);
@@ -510,18 +550,40 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
   }
   std::cout << '\n';
 
-  // Initialize the bilateral_hist with zeros
-  std::vector<int> bilateral_hist(k_iso, 0);
+  std::ofstream myfile;
+  myfile.open ("iso_and_bil_des.txt");
+  myfile << "ISO-Curve Signature: " << '\n';
+  for (size_t i = 0; i < iso_curve_bin.size(); i++) {
+    myfile << iso_curve_bin[i] << " ";
+  }
+  myfile << "\n";
 
-  std::vector<std::vector<int> > iso_k_classes(k_iso);
-  std::vector<int> roi_elementes;
+  Eigen::MatrixXd P1_iso(iso_points_1.size(), 3);
+  Eigen::MatrixXd P2_iso(iso_points_2.size(), 3);
+
+  if(iso_points_1.size() == iso_points_2.size())
+  {
+    std::cout << "p1 and p2 has the same length lines are drawing" << '\n';
+    for (size_t i = 0; i < iso_points_1.size(); i++) {
+      P1_iso.row(i) = iso_points_1[i];
+      P2_iso.row(i) = iso_points_2[i];
+    }
+  }
+  else
+    std::cout << "p1 and p2 has different sizes, SHAME !!" << '\n';
+
+
+  // Initialize the bilateral_hist with zeros
+  std::vector<double> bilateral_hist(k_iso, 0);
+
+  // std::vector<int> roi_elementes;
   std::vector<bool> is_roi_element(m_v, false);
-  double distance_threshold = max_geodesic/2;
+  double distance_threshold = max_geodesic/1.5;
   double bilateral_unit = distance_threshold/20;
   for (size_t i = 0; i < m_v; i++) {
     double min_geo_to_path = INT_MAX;
-    for (size_t j = 0; j < my_out.route.size(); j++) {
-      int k = my_out.route[j];
+    for (size_t j = 0; j < parent_m.size(); j++) {
+      int k = parent_m[j];
       if(V_geodesic(i,k) < min_geo_to_path && i!=k)
       {
         min_geo_to_path = V_geodesic(i,k);
@@ -530,25 +592,34 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
     if(min_geo_to_path < distance_threshold &&
       V_geodesic(i,st) < distance_threshold && V_geodesic(i,fin) < distance_threshold)
     {
-      roi_elementes.push_back(i);
+      // roi_elementes.push_back(i);
       is_roi_element[i] = true;
-      int k_class = round(min_geo_to_path/bilateral_unit);
-      iso_k_classes[k_class].push_back(i);
-      bilateral_hist[k_class]++;
+      // int k_class = round(min_geo_to_path/bilateral_unit);
     }
   }
+
+  std::cout << "ROI has " << is_roi_element.size() << " elements" << '\n';
   // iterate over the faces and compute bilateral histogram
   Eigen::VectorXd Z = Eigen::VectorXd::Zero(m_f);
   for (size_t i = 0; i < m_f; i++) {
     int a = F(i,0), b = F(i,1), c = F(i,2);
     if (is_roi_element[a] && is_roi_element[b] && is_roi_element[c]) {
-      int k_class = round(distance_threshold/V_geodesic(st, a));
       double middle_bi = (V_geodesic(st, a) + V_geodesic(st, b)
         + V_geodesic(st, c))/3;
+      int k_class = round(middle_bi/bilateral_unit);
+      double face_area = triangle_area_calculater(V_geodesic(a,b),
+        V_geodesic(b,c), V_geodesic(a,c));
+      bilateral_hist[k_class] += face_area;
       Z(i) = 1 - middle_bi/distance_threshold;
-      // std::cout << "Z value is " << Z(i) << '\n';
+      std::cout << "Z value is " << Z(i) << '\n';
     }
   }
+
+  myfile << "bilateral histogram: " << '\n';
+  for (size_t i = 0; i < bilateral_hist.size(); i++) {
+    myfile << bilateral_hist[i] << " ";
+  }
+  myfile << "\n";
 
   igl::jet(Z,true,C);
 
@@ -557,19 +628,20 @@ for(size_t i=0; i<my_out.route.size()-1; i++)
     std::cout << bilateral_hist[i] << " ";
   }
   std::cout << '\n';
-  // put the roi point into matrix P for visualization
-  Eigen::MatrixXd P(roi_elementes.size(), 3);
-  for(size_t i=0; i<roi_elementes.size(); i++)
-  {
-    int vertex = roi_elementes[i];
-    P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
-  }
+  // // put the roi point into matrix P for visualization
+  // Eigen::MatrixXd P(roi_elementes.size(), 3);
+  // for(size_t i=0; i<roi_elementes.size(); i++)
+  // {
+  //   int vertex = roi_elementes[i];
+  //   P(i,0) = V(vertex,0), P(i,1) = V(vertex,1), P(i,2) = V(vertex,2);
+  // }
 
-
+  myfile.close();
   // Plot the mesh
   igl::opengl::glfw::Viewer viewer;
   viewer.data().set_mesh(V, F);
   viewer.data().add_edges(P1, P2, Eigen::RowVector3d(1,0,0));
+  viewer.data().add_edges(P1_iso, P2_iso, Eigen::RowVector3d(1,1,0));
   // viewer.data().add_points(P, Eigen::RowVector3d(0,0,1));
   viewer.data().set_colors(C);
   viewer.launch();
