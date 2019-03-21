@@ -1,0 +1,20 @@
+centaur.off
+
+Operation took 3.85215seconds for array dij
+Operation took 0.041284seconds for min heap dij
+Operation took 0.033374seconds for fibo heap dij
+
+man.off
+
+Operation took 42.6544seconds for array dij
+Operation took 0.154839seconds for min heap dij
+Operation took 0.112205seconds for fibo heap dij
+
+weirdSphere.off
+
+Operation took 179.273seconds for array dij
+Operation took 0.328439seconds for min heap dij
+Operation took 0.250257seconds for fibo heap dij
+
+
+

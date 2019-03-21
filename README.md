@@ -1,13 +1,16 @@
-# libigl example project
+# CENG 789 Assignment \#1
 
-A blank project example showing how to use libigl and cmake. Feel free and
-encouraged to copy or fork this project as a way of starting a new personal
-project using libigl.
+This is the CENG 789 Assignment 1 implemented by Alp Eren SARI.
+The project depends on [libigl](http://libigl.github.io/libigl/)  
 
-## See the tutorial first
+## Impelemented Stuff
 
-Then build, run and understand the [libigl
-tutorial](http://libigl.github.io/libigl/tutorial/).
+In this project, geodesic distance calculation using dijkstra shortest path
+search by using array, minimum heap and fibonacci heap implemented. For the
+query point 3 different method is used and calculation duration's printed
+on the screen. After that part, FPS runs. Using FPS points later ISO-Curve
+Signature and Bilateral Histogram descriptors calculated and printed in a
+text file
 
 ## Compile
 
@@ -24,7 +27,11 @@ This should find and build the dependencies and create a `example_bin` binary.
 
 From within the `build` directory just issue:
 
-    ./example_bin
+    ./example_bin mesh_path source_point destination_point fps_point_number
+
+    where mesh_path is the path of the input mesh source_point is the source
+    vertex number, destination_point is the destination vertex number and
+    fps_point_number is the fps point numbers to be sampled.
 
 A glfw app should launch displaying a 3D cube.
 
